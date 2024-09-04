@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Listado de Películas</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        th, td {
+            padding: 10px 13px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        input[type="file"], input[type="text"], button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .title-column {
+            background-color: #f0f8ff;
+            font-weight: bold;
+        }
+        @media (max-width: 600px) {
+            th, td {
+                padding: 8px;
+            }
+        }
+        .sort-icon {
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <input type="text" id="search-input" placeholder="Buscar películas..." onkeyup="filterTable();">
+    <input type="file" id="input-excel" accept=".xlsx, .xls">
+    <table id="table-movies">
+        <thead>
+            <tr>
+                <th onclick="sortTable(0)">Rating <span id="icon-0" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(1)">RatingDate <span id="icon-1" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(2)">Title <span id="icon-2" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(3)">Originaltitle <span id="icon-3" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(4)">url <span id="icon-4" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(5)">Type <span id="icon-5" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(6)">IMDb <span id="icon-6" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(7)">Runtime <span id="icon-7" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(8)">Year <span id="icon-8" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(9)">Gennres <span id="icon-9" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(10)">NumVotes <span id="icon-10" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(11)">ReleaseDate <span id="icon-11" class="sort-icon">▼</span></th>
+                <th onclick="sortTable(12)">Directors <span id="icon-12" class="sort-icon">▼</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script>
+        document.getElementById('input-excel').addEventListener('change', function(e) {
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var data = e.target.result;
+                var workbook = XLSX.read(data, { type: 'binary' });
+                workbook.SheetNames.forEach(function(sheetName) {
+                    var XL_row_object = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]);
+                    var table_html = "";
+                    XL_row_object.forEach(function(row) {
+                        table_html += `<tr>
+                            <td>${checkValue(formatNumber(row.Rating))}</td>
+                            <td>${checkValue(row.RatingDate)}</td>
+                            <td class='title-column'>${checkValue(row.Title)}</td>
+                            <td>${checkValue(row.Originaltitle)}</td>
+                            <td>${checkValue(formatLink(row.Url, 'Ver Más'))}</td>
+                            <td>${checkValue(row.Type)}</td>
+                            <td>${checkValue(formatNumber(row.IMDb))}</td>
+                            <td>${checkValue(row.Runtime)}</td>
+                            <td>${checkValue(row.Year)}</td>
+                            <td>${checkValue(row.Gennre)}</td>
+                            <td>${checkValue(row.NumVotes)}</td>
+                            <td>${checkValue(formatDate(row.ReleaseDate))}</td>
+                            <td>${checkValue(row.Directors)}</td>
+                        </tr>`;
+                    });
+                    document.getElementById("table-movies").getElementsByTagName("tbody")[0].innerHTML = table_html;
+                });
+            };
+            reader.readAsBinaryString(e.target.files[0]);
+        });
+
+        function formatNumber(value) {
+            return value !== undefined && value !== null ? Number(value).toLocaleString('es', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "";
+        }
+
+        function formatDate(dateString) {
+            return dateString ? new Date(dateString).toLocaleDateString('es', { day: '2-digit', month: '2-digit', year: 'numeric' }) : "";
+        }
+
+        function formatLink(url, text) {
+            return url && url.trim() !== "" ? `<a href="${url}" target="_blank">${text || url}</a>` : "";
+        }
+
+        function checkValue(value) {
+            return value === undefined || value === null ? "" : value;
+        }
+
+        function filterTable() {
+            var input = document.getElementById("search-input");
+            var filter = input.value.toUpperCase();
+            var table = document.getElementById("table-movies");
+            var tr = table.getElementsByTagName("tr");
+            for (var i = 1; i < tr.length; i++) {
+                var td = tr[i].getElementsByTagName("td");
+                var found = false;
+                for (var j = 0; j < td.length; j++) {
+                    if (td[j] && (td[j].textContent || td[j].innerText).toUpperCase().indexOf(filter) > -1) {
+                        found = true;
+                        break;
+                    }
+                }
+                tr[i].style.display = found ? "" : "none";
+            }
+        }
+
+        function sortTable(columnIndex) {
+            var table, rows, switching, i, x, y, shouldSwitch, dir = "asc", switchcount = 0;
+            table = document.getElementById("table-movies");
+            switching = true;
+            while (switching) {
+                switching = false;
+                rows = table.getElementsByTagName("TR");
+                for (i = 1; i < (rows.length - 1); i++) {
+                    shouldSwitch = false;
+                    x = rows[i].getElementsByTagName("TD")[columnIndex];
+                    y = rows[i + 1].getElementsByTagName("TD")[columnIndex];
+                    if ((dir == "asc" && x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) ||
+                        (dir == "desc" && x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase())) {
+                        shouldSwitch = true;
+                        break;
+                    }
+                }
+                if (shouldSwitch) {
+                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                    switching = true;
+                    switchcount++;
+                } else {
+                    if (switchcount == 0 && dir == "asc") {
+                        dir = "desc";
+                        switching = true;
+                    } else {
+                        dir = "asc";
+                    }
+                }
+                updateIcons(columnIndex, dir);
+            }
+        }
+
+        function updateIcons(columnIndex, direction) {
+            var icons = document.getElementsByClassName('sort-icon');
+            Array.from(icons).forEach(icon => icon.textContent = '▼');
+            document.getElementById('icon-' + columnIndex).textContent = direction === 'asc' ? '▲' : '▼';
+        }
+    </script>
+</body>
+</html>
